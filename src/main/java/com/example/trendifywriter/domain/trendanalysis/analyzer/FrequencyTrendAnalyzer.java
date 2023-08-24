@@ -1,4 +1,4 @@
-package com.example.trendifywriter.domain.trendanalysis;
+package com.example.trendifywriter.domain.trendanalysis.analyzer;
 
 public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 

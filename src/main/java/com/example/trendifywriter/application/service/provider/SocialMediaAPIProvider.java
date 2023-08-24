@@ -1,4 +1,4 @@
-package com.example.trendifywriter.application.service;
+package com.example.trendifywriter.application.service.provider;
 
 public class SocialMediaAPIProvider implements DataProvider{
 

@@ -1,7 +1,8 @@
-package com.example.trendifywriter.domain.post;
+package com.example.trendifywriter.domain.post.service;
 
-import com.example.trendifywriter.domain.trendanalysis.Trend;
-import com.example.trendifywriter.domain.trendanalysis.TrendAnalysisService;
+import com.example.trendifywriter.domain.post.model.Post;
+import com.example.trendifywriter.domain.trendanalysis.dto.Trend;
+import com.example.trendifywriter.domain.trendanalysis.service.TrendAnalysisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

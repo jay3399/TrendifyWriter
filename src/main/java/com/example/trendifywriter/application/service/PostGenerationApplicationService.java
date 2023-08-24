@@ -1,11 +1,11 @@
 package com.example.trendifywriter.application.service;
 
 
-import com.example.trendifywriter.domain.blog.BlogService;
-import com.example.trendifywriter.domain.post.Post;
-import com.example.trendifywriter.domain.post.PostGenerationService;
-import com.example.trendifywriter.domain.trendanalysis.Trend;
-import com.example.trendifywriter.domain.trendanalysis.TrendAnalysisService;
+import com.example.trendifywriter.domain.blog.service.BlogService;
+import com.example.trendifywriter.domain.post.model.Post;
+import com.example.trendifywriter.domain.post.service.PostGenerationService;
+import com.example.trendifywriter.domain.trendanalysis.dto.Trend;
+import com.example.trendifywriter.domain.trendanalysis.service.TrendAnalysisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

@@ -1,7 +1,6 @@
-package com.example.trendifywriter.domain.blog;
+package com.example.trendifywriter.domain.blog.service;
 
-import com.example.trendifywriter.domain.post.Post;
-import com.example.trendifywriter.domain.post.PostRepository;
+import com.example.trendifywriter.domain.post.model.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
