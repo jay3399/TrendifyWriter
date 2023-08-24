@@ -1,2 +1,8 @@
-package com.example.trendifywriter.domain.post;public class PostRepository {
+package com.example.trendifywriter.domain.post;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PostRepository extends JpaRepository<Post, Long> {
+
+
 }

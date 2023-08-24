@@ -1,2 +1,5 @@
-package com.example.trendifywriter.domain.post;public class PostContent {
+package com.example.trendifywriter.domain.post;
+
+public class PostContent {
+
 }

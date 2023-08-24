@@ -1,2 +1,5 @@
-package com.example.trendifywriter.domain.trendanalysis;public class TrendAnalysisRepository {
+package com.example.trendifywriter.domain.trendanalysis;
+
+public class TrendAnalysisRepository {
+
 }

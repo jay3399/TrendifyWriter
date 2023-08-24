@@ -1,17 +1,13 @@
 package com.example.trendifywriter.application.service;
 
-public class APIProvider {
+public class NewsAPIProvider implements DataProvider{
 
 
     //news를 통해 데이터가져온다
-    public String fetchNewsData() {
+    public String fetchData() {
         return "Data";
     }
 
-    //sns를통해 가져온다
-    public void fetchSocialMediaData() {
-
-    }
 
 
 }

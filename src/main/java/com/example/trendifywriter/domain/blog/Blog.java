@@ -1,2 +1,5 @@
-package com.example.trendifywriter.domain.blog;public class Blog {
+package com.example.trendifywriter.domain.blog;
+
+public class Blog {
+
 }

@@ -1,2 +1,7 @@
-package com.example.trendifywriter.application.service;public interface DataProvider {
+package com.example.trendifywriter.application.service;
+
+public interface DataProvider {
+
+    String fetchData();
+
 }
