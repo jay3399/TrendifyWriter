@@ -1,5 +1,6 @@
 package com.example.trendifywriter.application.service.provider;
 
+
 public class NewsAPIProvider implements DataProvider{
 
 

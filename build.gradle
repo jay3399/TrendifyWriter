@@ -34,6 +34,25 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.amqp:spring-rabbit-test'
+
+//    implementation 'edu.stanford.nlp:stanford-corenlp:4.2.2'
+//    implementation 'edu.stanford.nlp:stanford-corenlp:4.2.2:models'
+//    implementation "kr.bydelta:koalanlp-hnn:2.1.4:assembly"
+
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'com.sun.xml.bind:jaxb-core:2.3.0.1'
+    implementation 'com.sun.xml.bind:jaxb-impl:2.3.1'
+
+    implementation group: 'org.openkoreantext', name: 'open-korean-text', version: '2.3.1'
+
+    implementation 'com.twitter.penguin:korean-text:4.4.4'
+
+
+
+
+    implementation 'com.rometools:rome:1.15.0'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
 }
 
 tasks.named('test') {

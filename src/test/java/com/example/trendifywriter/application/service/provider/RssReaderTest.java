@@ -1,0 +1,88 @@
+package com.example.trendifywriter.application.service.provider;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.rometools.rome.feed.synd.SyndEntry;
+import com.rometools.rome.io.FeedException;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+
+import org.openkoreantext.processor.OpenKoreanTextProcessorJava;
+import org.openkoreantext.processor.phrase_extractor.KoreanPhraseExtractor.KoreanPhrase;
+import org.openkoreantext.processor.tokenizer.KoreanTokenizer.KoreanToken;
+import scala.collection.Seq;
+
+
+class RssReaderTest {
+
+    @Test
+    public void reader() throws FeedException, IOException {
+
+        String paragraph = "국민연금에서 김영섭KT대표의 선임안을 찬성하였다";
+
+
+        CharSequence normalize = OpenKoreanTextProcessorJava.normalize(paragraph);
+        System.out.println("normalize = " + normalize);
+
+        Seq<KoreanToken> tokenize = OpenKoreanTextProcessorJava.tokenize(normalize);
+        System.out.println(OpenKoreanTextProcessorJava.tokensToJavaStringList(tokenize));
+        System.out.println(OpenKoreanTextProcessorJava.tokensToJavaKoreanTokenList(tokenize));
+
+        List<KoreanPhrase> koreanPhrases = OpenKoreanTextProcessorJava.extractPhrases(tokenize , true , true);
+
+        System.out.println("koreanPhrases = " + koreanPhrases);
+
+
+
+        List<String> rsslist = Arrays.asList(
+                "https://www.mk.co.kr/rss/30000001/",
+                "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml",
+                "https://fs.jtbc.co.kr/RSS/newsflash.xml",
+                "https://rss.donga.com/total.xml",
+                "https://www.hankyung.com/feed/all-news"
+
+        );
+
+        for (String s : rsslist) {
+            RssReader reader = new RssReader();
+            List<SyndEntry> articles = reader.fetchArticles(s);
+            NewsParser newsParser = new NewsParser();
+            List<String> parsed = newsParser.parse(articles);
+//            System.out.println("parsed = " + parsed);
+            KeywordExtractor keywordExtractor = new KeywordExtractor();
+            List<String> list = keywordExtractor.extractKeyword(parsed);
+//            System.out.println("list = " + list);
+            FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
+            Map<String, Integer> stringIntegerMap = frequencyAnalyzer.analyzeFrequency(list);
+            System.out.println("stringIntegerMap = " + stringIntegerMap);
+
+        }
+
+//        RssReader reader = new RssReader();
+//
+//        List<SyndEntry> articles = reader.fetchArticles("https://www.mk.co.kr/rss/30000001/");
+//
+//
+//        NewsParser newsParser = new NewsParser();
+//
+//        List<String> parsedArticles = newsParser.parse(articles);
+//
+//
+//        KeywordExtractor keywordExtractor = new KeywordExtractor();
+//
+//        List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
+//
+////        System.out.println("keywords = " + keywords);
+//
+//        FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
+//        Map<String, Integer> stringIntegerMap = frequencyAnalyzer.analyzeFrequency(keywords);
+//
+//        System.out.println("stringIntegerMap = " + stringIntegerMap);
+
+    }
+
+}

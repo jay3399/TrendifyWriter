@@ -14,9 +14,6 @@ public class TrendAnalysisService {
     private final DataProvider socialMediaAPIProvider;
     private final TrendAnalyzer trendAnalyzer;
 
-
-
-
     public Trend fetchTrendingData() {
 
         String s = newsAPIProvider.fetchData();

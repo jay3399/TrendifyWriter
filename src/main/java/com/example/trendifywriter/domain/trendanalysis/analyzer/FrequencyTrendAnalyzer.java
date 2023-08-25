@@ -1,5 +1,8 @@
 package com.example.trendifywriter.domain.trendanalysis.analyzer;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 
     @Override
