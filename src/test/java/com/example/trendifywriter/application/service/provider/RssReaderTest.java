@@ -36,14 +36,13 @@ class RssReaderTest {
 
         System.out.println("koreanPhrases = " + koreanPhrases);
 
-
-
         List<String> rsslist = Arrays.asList(
                 "https://www.mk.co.kr/rss/30000001/",
-                "https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml",
                 "https://fs.jtbc.co.kr/RSS/newsflash.xml",
+                "https://www.hankyung.com/feed/all-news",
+                "https://www.hani.co.kr/rss/newsrank/",
                 "https://rss.donga.com/total.xml",
-                "https://www.hankyung.com/feed/all-news"
+                "https://news.sbs.co.kr/news/ReplayRssFeed.do?prog_cd=R1&plink=RSSREADER"
 
         );
 
@@ -52,13 +51,11 @@ class RssReaderTest {
             List<SyndEntry> articles = reader.fetchArticles(s);
             NewsParser newsParser = new NewsParser();
             List<String> parsed = newsParser.parse(articles);
-//            System.out.println("parsed = " + parsed);
             KeywordExtractor keywordExtractor = new KeywordExtractor();
             List<String> list = keywordExtractor.extractKeyword(parsed);
-//            System.out.println("list = " + list);
             FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
             Map<String, Integer> stringIntegerMap = frequencyAnalyzer.analyzeFrequency(list);
-            System.out.println("stringIntegerMap = " + stringIntegerMap);
+            System.out.println(frequencyAnalyzer.getTop5FrequentWords(stringIntegerMap));
 
         }
 
