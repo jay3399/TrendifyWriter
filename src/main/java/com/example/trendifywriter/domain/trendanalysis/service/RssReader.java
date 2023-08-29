@@ -1,4 +1,4 @@
-package com.example.trendifywriter.application.service.provider;
+package com.example.trendifywriter.domain.trendanalysis.service;
 
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
@@ -10,8 +10,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 
+@Component
 public class RssReader {
 
     public List<SyndEntry> fetchArticles(String rssUrl) {
@@ -37,7 +39,6 @@ public class RssReader {
 
 
 // 매일경제 https://www.mk.co.kr/rss/30000001/
-
 
 //조선일보  https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml
 
