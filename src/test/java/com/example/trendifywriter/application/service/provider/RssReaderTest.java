@@ -24,26 +24,11 @@ import scala.collection.Seq;
 class RssReaderTest {
 
 
-//     @Autowired
-//     RssReader reader;
-//
-//    @Autowired
-//    NewsParser parser;
-//
-//    @Autowired
-//    KeywordExtractor keywordExtractor;
-//
-//    @Autowired
-//    FrequencyAnalyzer frequencyAnalyzer;
-
 
     @Test
-    public void reader() throws FeedException, IOException {
-        
-
+    public void reader()  {
 
         String paragraph = "국민연금에서 김영섭KT대표의 선임안을 찬성하였다";
-
 
         CharSequence normalize = OpenKoreanTextProcessorJava.normalize(paragraph);
         System.out.println("normalize = " + normalize);

@@ -6,11 +6,9 @@ import com.example.trendifywriter.domain.trendanalysis.service.NewsParser;
 import com.example.trendifywriter.domain.trendanalysis.service.RssReader;
 import com.rometools.rome.feed.synd.SyndEntry;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,17 +27,68 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 
     private final FrequencyAnalyzer frequencyAnalyzer;
 
-
     private final List<String> rsslist = Arrays.asList(
             "https://www.mk.co.kr/rss/30000001/",
-            "https://fs.jtbc.co.kr/RSS/newsflash.xml",
-            "https://www.hankyung.com/feed/all-news",
+            "https://fs.jtbc.co.kr/RSS/newsrank.xml",
+            "https://fs.jtbc.co.kr/RSS/newsroom.xml",
             "https://www.hani.co.kr/rss/newsrank/",
+            "https://www.hani.co.kr/rss/lead/",
+            "https://www.hani.co.kr/rss/",
             "https://rss.donga.com/total.xml",
             "https://news.sbs.co.kr/news/ReplayRssFeed.do?prog_cd=R1&plink=RSSREADER"
-
     );
 
+
+    @Override
+    public Map<String, Integer> analyze() {
+
+
+        Map<String, Integer> aggregatedMap = new ConcurrentHashMap<>();
+
+        rsslist.parallelStream().forEach(s -> {
+            List<SyndEntry> articles = reader.fetchArticles(s);
+            List<String> parsedArticles = parser.parse(articles);
+            List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
+
+            Map<String, Integer> frequencyMap = keywords.stream()
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
+
+            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(frequencyMap);
+
+            System.out.println("top5 = " + top5);
+
+            top5.forEach(entry -> aggregatedMap.merge(entry.getKey(), entry.getValue(), Integer::sum));
+        });
+
+
+        return aggregatedMap.entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(10)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+    }
+}
+
+
+//        Map<String, Integer> aggregatedMap = new HashMap<>();
+//
+//        for (String s : rsslist) {
+//            List<SyndEntry> articles = reader.fetchArticles(s);
+//            List<String> parsedArticles = parser.parse(articles);
+//            List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
+//
+//            Map<String, Integer> frequencyMap = keywords.stream()
+//                    .collect(Collectors.groupingBy(keyword -> keyword, Collectors.summingInt(keyword -> 1)));
+//
+//            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(frequencyMap);
+//
+//            top5.forEach(entry -> aggregatedMap.put(entry.getKey(), aggregatedMap.getOrDefault(entry.getKey(), 0) + entry.getValue()));
+//        }
 
 //    @Override
 //    public Map<String, Integer> analyze() {
@@ -65,52 +114,3 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 //
 //        return stringIntegerMap;
 //    }
-
-    @Override
-    public Map<String, Integer> analyze() {
-
-
-
-        Map<String, Integer> aggregatedMap = new ConcurrentHashMap<>();
-
-        rsslist.parallelStream().forEach(s -> {
-            List<SyndEntry> articles = reader.fetchArticles(s);
-            List<String> parsedArticles = parser.parse(articles);
-            List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
-
-            Map<String, Integer> frequencyMap = keywords.stream()
-                    .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
-
-            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(frequencyMap);
-
-            top5.forEach(entry -> aggregatedMap.merge(entry.getKey(), entry.getValue(), Integer::sum));
-        });
-
-
-//        Map<String, Integer> aggregatedMap = new HashMap<>();
-//
-//        for (String s : rsslist) {
-//            List<SyndEntry> articles = reader.fetchArticles(s);
-//            List<String> parsedArticles = parser.parse(articles);
-//            List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
-//
-//            Map<String, Integer> frequencyMap = keywords.stream()
-//                    .collect(Collectors.groupingBy(keyword -> keyword, Collectors.summingInt(keyword -> 1)));
-//
-//            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(frequencyMap);
-//
-//            top5.forEach(entry -> aggregatedMap.put(entry.getKey(), aggregatedMap.getOrDefault(entry.getKey(), 0) + entry.getValue()));
-//        }
-
-        return aggregatedMap.entrySet()
-                .stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .limit(10)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
-    }
-}
