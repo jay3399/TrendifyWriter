@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Realtime Keywords</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+
+<h1>Realtime Keywords</h1>
+<ul id="keywordList">
+</ul>
+
+<script>
+  console.log("start")
+  // client.js
+
+  let socket = new SockJS('/realtime_keywords');
+  let stompClient = Stomp.over(socket);
+
+  stompClient.connect({}, function(frame) {
+    stompClient.subscribe('/topic/realtime_keywords', function(message) {
+      console.log("updated")
+      updateRealtimeKeywords(JSON.parse(message.body));
+    });
+
+
+    stompClient.send("/app/request_keywords", {}, {});
+
+  });
+
+  function updateRealtimeKeywords(keywords) {
+    let keywordList = document.getElementById("keywordList");
+    keywordList.innerHTML = "";
+    keywords.forEach(function(keyword) {
+      let listItem = document.createElement("li");
+      listItem.textContent = keyword.keyword + ": " + keyword.frequency;
+      keywordList.appendChild(listItem);
+    });
+  }
+
+
+  console.log("end")
+
+
+</script>
+
+</body>
+</html>

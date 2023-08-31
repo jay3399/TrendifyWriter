@@ -5,6 +5,8 @@ import com.example.trendifywriter.domain.trendanalysis.service.KeywordExtractor;
 import com.example.trendifywriter.domain.trendanalysis.service.NewsParser;
 import com.example.trendifywriter.domain.trendanalysis.service.RssReader;
 import com.rometools.rome.feed.synd.SyndEntry;
+import jakarta.persistence.criteria.CriteriaBuilder.In;
+import java.net.http.WebSocket;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,6 +30,7 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 
     private final FrequencyAnalyzer frequencyAnalyzer;
 
+
     private final List<String> rsslist = Arrays.asList(
             "https://www.mk.co.kr/rss/30000001/",
             "https://fs.jtbc.co.kr/RSS/newsrank.xml",
@@ -40,8 +44,7 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 
 
     @Override
-    public Map<String, Integer> analyze() {
-
+    public Map<String , Integer> analyze() {
 
         Map<String, Integer> aggregatedMap = new ConcurrentHashMap<>();
 
@@ -51,13 +54,16 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
             List<String> keywords = keywordExtractor.extractKeyword(parsedArticles);
 
             Map<String, Integer> frequencyMap = keywords.stream()
-                    .collect(Collectors.groupingBy(Function.identity(), Collectors.summingInt(e -> 1)));
+                    .collect(Collectors.groupingBy(Function.identity(),
+                            Collectors.summingInt(e -> 1)));
 
-            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(frequencyMap);
+            List<Map.Entry<String, Integer>> top5 = frequencyAnalyzer.getTop5FrequentWordsV2(
+                    frequencyMap);
 
-            System.out.println("top5 = " + top5);
+            top5.forEach(
+                    entry -> aggregatedMap.merge(entry.getKey(), entry.getValue(), Integer::sum));
 
-            top5.forEach(entry -> aggregatedMap.merge(entry.getKey(), entry.getValue(), Integer::sum));
+//            redisTemplate.opsForHash().putAll("realtime_keywords", aggregatedMap);
         });
 
 
@@ -73,8 +79,6 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
                 ));
     }
 }
-
-
 //        Map<String, Integer> aggregatedMap = new HashMap<>();
 //
 //        for (String s : rsslist) {

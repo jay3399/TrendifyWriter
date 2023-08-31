@@ -4,6 +4,6 @@ import java.util.Map;
 
 public interface TrendAnalyzer {
 
-    Map<String ,Integer> analyze();
+    Map<String , Integer> analyze();
 
 }
