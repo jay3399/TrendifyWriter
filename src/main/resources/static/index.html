@@ -34,7 +34,7 @@
     keywordList.innerHTML = "";
     keywords.forEach(function(keyword) {
       let listItem = document.createElement("li");
-      listItem.textContent = keyword.keyword + ": " + keyword.frequency;
+      listItem.textContent = keyword.keyword;
       keywordList.appendChild(listItem);
     });
   }

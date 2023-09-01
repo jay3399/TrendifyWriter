@@ -7,9 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -17,29 +14,26 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class WebSocketController {
 
-    private final RedisTemplate<String , Object> redisTemplate;
-
     private final SimpMessagingTemplate simpMessagingTemplate;
 
 
     @EventListener
     public void sendKeywords(KeywordsUpdatedEvent event) {
 
-//        Map<Object, Object> keywords = redisTemplate.opsForHash().entries("realtime_keywords");
-//
-//        System.out.println("keywords = " + keywords);
 
-        Map<Object, Object> keywords = event.getLatestKeywords();
+        Map<String, Integer> keywords = event.getLatestKeywords();
 
 
         List<RealtimeKeywordDto> collect = keywords.entrySet().stream()
-                .map(entry -> new RealtimeKeywordDto((String) entry.getKey(),
-                        (Integer) entry.getValue()))
-                .sorted(Comparator.comparingInt(RealtimeKeywordDto::getFrequency))
+                .map(entry -> new RealtimeKeywordDto( entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparingInt(RealtimeKeywordDto::getFrequency).reversed())
+                .limit(10)
                 .collect(Collectors.toList());
 
         simpMessagingTemplate.convertAndSend("/topic/realtime_keywords", collect
         );
+
+
 
 
     }

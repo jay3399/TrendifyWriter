@@ -66,17 +66,19 @@ public class FrequencyTrendAnalyzer implements TrendAnalyzer {
 //            redisTemplate.opsForHash().putAll("realtime_keywords", aggregatedMap);
         });
 
+        System.out.println("aggregatedMap = " + aggregatedMap);
 
-        return aggregatedMap.entrySet()
-                .stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .limit(10)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+        return aggregatedMap;
+//        return aggregatedMap.entrySet()
+//                .stream()
+//                .sorted(Map.Entry.<String, Integer>comparingByValue())
+//                .limit(10)
+//                .collect(Collectors.toMap(
+//                        Map.Entry::getKey,
+//                        Map.Entry::getValue,
+//                        (e1, e2) -> e1,
+//                        LinkedHashMap::new
+//                ));
     }
 }
 //        Map<String, Integer> aggregatedMap = new HashMap<>();

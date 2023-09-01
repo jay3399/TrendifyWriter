@@ -4,13 +4,13 @@ import java.util.Map;
 
 public class KeywordsUpdatedEvent {
 
-    private final Map<Object, Object> latestKeywords;
+    private final Map<String, Integer> latestKeywords;
 
-    public KeywordsUpdatedEvent(Map<Object, Object> latestKeywords) {
+    public KeywordsUpdatedEvent(Map<String, Integer> latestKeywords) {
         this.latestKeywords = latestKeywords;
     }
 
-    public Map<Object, Object> getLatestKeywords() {
+    public Map<String, Integer> getLatestKeywords() {
         return latestKeywords;
     }
 
