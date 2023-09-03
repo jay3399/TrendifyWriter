@@ -1,12 +1,12 @@
-package com.example.trendifywriter.domain.scheduletask;
+package com.example.trendifywriter.application.service;
 
 import java.util.Map;
 
-public class KeywordsUpdatedEvent {
+public class KeywordsEvent {
 
     private final Map<String, Integer> latestKeywords;
 
-    public KeywordsUpdatedEvent(Map<String, Integer> latestKeywords) {
+    public KeywordsEvent(Map<String, Integer> latestKeywords) {
         this.latestKeywords = latestKeywords;
     }
 

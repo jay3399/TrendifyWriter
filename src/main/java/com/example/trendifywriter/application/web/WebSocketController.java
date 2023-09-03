@@ -1,6 +1,6 @@
 package com.example.trendifywriter.application.web;
 
-import com.example.trendifywriter.domain.scheduletask.KeywordsUpdatedEvent;
+import com.example.trendifywriter.application.service.KeywordsEvent;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class WebSocketController {
 
 
     @EventListener
-    public void sendKeywords(KeywordsUpdatedEvent event) {
+    public void sendKeywords(KeywordsEvent event) {
 
 
         Map<String, Integer> keywords = event.getLatestKeywords();
@@ -32,11 +32,12 @@ public class WebSocketController {
 
         simpMessagingTemplate.convertAndSend("/topic/realtime_keywords", collect
         );
-
-
-
-
     }
+
+
+
+
+
 
 
 //    @MessageMapping("/request_keywords")
