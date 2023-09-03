@@ -4,28 +4,43 @@
   <title>Realtime Keywords</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 </head>
 <body>
 
 <h1>Realtime Keywords</h1>
-<ul id="keywordList">
-</ul>
+<ul id="keywordList"></ul>
+
+<h1>Hourly Top Keywords Time-series</h1>
+<canvas id="timeSeries" width="400" height="200"></canvas>
 
 <script>
   console.log("start")
   // client.js
 
+  let allHourlyData = {};
+  let chart;
+
+
   let socket = new SockJS('/realtime_keywords');
   let stompClient = Stomp.over(socket);
 
   stompClient.connect({}, function(frame) {
+
     stompClient.subscribe('/topic/realtime_keywords', function(message) {
       console.log("updated")
       updateRealtimeKeywords(JSON.parse(message.body));
     });
 
+    stompClient.subscribe('/topic/hourly_data', function (message) {
+      const receivedData = JSON.parse(message.body);
+      const currentHour = receivedData.hour;
+      const hourlyData = receivedData.data;
+      allHourlyData[currentHour] = hourlyData;
+      updateTimeSeries(allHourlyData)
+    });
 
-    stompClient.send("/app/request_keywords", {}, {});
+    // stompClient.send("/app/request_keywords", {}, {});
 
   });
 
@@ -41,6 +56,42 @@
 
 
   console.log("end")
+
+
+
+  function updateTimeSeries(data) {
+    const hours = Object.keys(data).sort();
+    const keywords = Object.keys(data[hours[0]] || {});
+
+    const datasets = keywords.map(keyword => {
+      return {
+        label: keyword,
+        data: hours.map(hour => data[hour][keyword] || 0),
+        fill: false,
+        borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+      };
+    });
+
+    if (chart) {
+      chart.destroy();
+    }
+
+    chart = new Chart(document.getElementById('timeSeries').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: hours,
+        datasets: datasets
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  }
 
 
 </script>
