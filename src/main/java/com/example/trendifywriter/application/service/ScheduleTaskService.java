@@ -26,7 +26,7 @@ public class ScheduleTaskService {
 
     // 이벤트 - 발행 구독 모델사용  컨트롤러 / 서비스 분리
 
-    @Scheduled(fixedRate = 20000)  // 5분마다 실행
+    @Scheduled(fixedRate = 30000)  // 5분마다 실행
     public void updateTenMinutes() {
         Map<String, Integer> latestKeywords = frequencyTrendAnalyzer.analyze();
         eventPublisher.publishEvent(new KeywordsEvent(latestKeywords)); // 실시간(10분간격) 키워드 웹소켓 업데이트.
@@ -43,10 +43,12 @@ public class ScheduleTaskService {
     // calculateTopKeywords 메서드 구현필요 -> 탑 10 키워드 정렬 추출.
     // 시간별 데이터 시각화 어떤식으로 프론트에 구현할지 ? , redis말고 rdb는 필요없을지 ?
 //    @Scheduled(cron = "0 0 * * * *")  // 매시간 0분에 실행
-    @Scheduled(fixedRate = 40000)
+    @Scheduled(fixedRate = 65000)
     public void updateHourly() {
 
         String currentHour = getCurrentHour();
+        String currentDate = getCurrentDate();
+
         System.out.println("currentHour = " + currentHour);
         Map<Object, Object> hourlyData = redisTemplate.opsForHash().entries("hourly:" + currentHour);
 
@@ -55,15 +57,12 @@ public class ScheduleTaskService {
         Map<String, Integer> hourlyTopKeywords = calculateTopKeywords(hourlyData);
 
         Map<String, Object> payload = new HashMap<>();
-
-        payload.put("hour", currentHour);
+        payload.put("dataTime", currentHour);
         payload.put("data", hourlyTopKeywords);
 
         simpMessagingTemplate.convertAndSend("/topic/hourly_data", payload);
 
-
-
-        redisTemplate.opsForHash().putAll("daily:" + currentHour, hourlyTopKeywords);
+        redisTemplate.opsForHash().putAll("daily:" + currentDate + ":" + currentHour, hourlyTopKeywords);
     }
 
     // 이것도 1초전에 데이터 집계해야할듯
@@ -91,6 +90,11 @@ public class ScheduleTaskService {
     private String getCurrentHour() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH"));
     }
+
+    public String getCurrentDate() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    }
+
 
 
     private Map<String, Integer> calculateTopKeywords(Map<Object, Object>  data) {

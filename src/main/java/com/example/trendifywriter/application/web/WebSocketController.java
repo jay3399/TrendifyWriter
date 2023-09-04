@@ -20,25 +20,22 @@ public class WebSocketController {
     @EventListener
     public void sendKeywords(KeywordsEvent event) {
 
-
         Map<String, Integer> keywords = event.getLatestKeywords();
 
-
-        List<RealtimeKeywordDto> collect = keywords.entrySet().stream()
-                .map(entry -> new RealtimeKeywordDto( entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparingInt(RealtimeKeywordDto::getFrequency).reversed())
-                .limit(10)
-                .collect(Collectors.toList());
+        List<RealtimeKeywordDto> collect = getRealtimeKeywordDtos(keywords);
 
         simpMessagingTemplate.convertAndSend("/topic/realtime_keywords", collect
         );
     }
 
-
-
-
-
-
+    private static List<RealtimeKeywordDto> getRealtimeKeywordDtos(Map<String, Integer> keywords) {
+        List<RealtimeKeywordDto> collect = keywords.entrySet().stream()
+                .map(entry -> new RealtimeKeywordDto( entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparingInt(RealtimeKeywordDto::getFrequency).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
+        return collect;
+    }
 
 //    @MessageMapping("/request_keywords")
 //    @SendTo("/topic/realtime_keywords")

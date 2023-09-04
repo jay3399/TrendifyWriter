@@ -34,7 +34,7 @@
 
     stompClient.subscribe('/topic/hourly_data', function (message) {
       const receivedData = JSON.parse(message.body);
-      const currentHour = receivedData.hour;
+      const currentHour = receivedData.dataTime;
       const hourlyData = receivedData.data;
       allHourlyData[currentHour] = hourlyData;
       updateTimeSeries(allHourlyData)
@@ -59,39 +59,51 @@
 
 
 
-  function updateTimeSeries(data) {
-    const hours = Object.keys(data).sort();
-    const keywords = Object.keys(data[hours[0]] || {});
+
+  function updateTimeSeries(allData) {
+    console.log(allData);
+
+
+
+    const dataTimes = Object.keys(allData).sort();
+    console.log(dataTimes);
+    let firstDataSet = allData[dataTimes[0]] || {};
+    const keywords = Object.keys(firstDataSet);
 
     const datasets = keywords.map(keyword => {
       return {
         label: keyword,
-        data: hours.map(hour => data[hour][keyword] || 0),
+        data: dataTimes.map(hour => allData[hour][keyword] || 0),
         fill: false,
         borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
       };
     });
 
     if (chart) {
-      chart.destroy();
+      chart.destroy();  // 이전 차트를 제거
     }
+
+    const formattedLabels = dataTimes.map(hour => `${hour}:00`);
+
+
 
     chart = new Chart(document.getElementById('timeSeries').getContext('2d'), {
       type: 'line',
       data: {
-        labels: hours,
+        labels: formattedLabels,
         datasets: datasets
       },
       options: {
         scales: {
           x: {
-            type: 'linear',
+            type: 'time',
             position: 'bottom'
           }
         }
       }
     });
   }
+
 
 
 </script>
