@@ -47,7 +47,6 @@ public class ScheduleTaskService {
     public void updateHourly() {
 
         String currentHour = getCurrentHour();
-        String currentDate = getCurrentDate();
 
         System.out.println("currentHour = " + currentHour);
         Map<Object, Object> hourlyData = redisTemplate.opsForHash().entries("hourly:" + currentHour);
@@ -56,14 +55,26 @@ public class ScheduleTaskService {
 
         Map<String, Integer> hourlyTopKeywords = calculateTopKeywords(hourlyData);
 
+        Map<String, Map<String, Integer>> allPreviousData = new HashMap<>();
+
+        for (int i = 0; i < Integer.parseInt(currentHour); i++) {
+            String hour = String.format("%02d", i);
+            Map<Object, Object> entries = redisTemplate.opsForHash().entries("daily:" + hour);
+            allPreviousData.put(hour, calculateTopKeywords(entries));
+        }
+
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("dataTime", currentHour);
         payload.put("data", hourlyTopKeywords);
+        payload.put("allPreviousData", allPreviousData);
 
         simpMessagingTemplate.convertAndSend("/topic/hourly_data", payload);
 
-        redisTemplate.opsForHash().putAll("daily:" + currentDate + ":" + currentHour, hourlyTopKeywords);
+        redisTemplate.opsForHash().putAll("daily:"+ currentHour, hourlyTopKeywords);
     }
+
+
 
     // 이것도 1초전에 데이터 집계해야할듯
     //  모든 daily 값 가져와서 , calculateTopKeywords 로 추출 .
@@ -119,3 +130,24 @@ public class ScheduleTaskService {
 }
 
 
+//
+//
+//        redisTemplate.opsForHash().putAll("daily:00", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//
+//                redisTemplate.opsForHash().putAll("daily:01", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:02", Map.of("교사", 40, "화장실", 14, "글로벌", 5, "홍범도", 22, "후쿠시마", 5));
+//                redisTemplate.opsForHash().putAll("daily:03", Map.of("교사", 20, "철거", 5, "글로벌", 13, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:04", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:05", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:06", Map.of("교사", 20, "유튜버", 25, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:07", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:08", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "목욕탕", 30, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:09", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:10", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:11", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:12", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:13", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:14", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:15", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:16", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
+//                redisTemplate.opsForHash().putAll("daily:17", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));

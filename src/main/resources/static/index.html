@@ -5,11 +5,52 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+
+  <style>
+
+    #keywordList {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .fade-in {
+      animation: fadeIn ease 1s;
+    }
+
+    @keyframes fadeIn {
+      0% {opacity: 0;}
+      100% {opacity: 1;}
+    }
+
+    .keyword-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .keyword-item {
+      background-color: #f2f2f2;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      transition: background-color 0.3s ease;
+    }
+
+    .keyword-item:hover {
+      background-color: #ccc;
+    }
+
+  </style>
 </head>
 <body>
 
 <h1>Realtime Keywords</h1>
-<ul id="keywordList"></ul>
+<ul id="keywordList" class="keyword-container"  ></ul>
 
 <h1>Hourly Top Keywords Time-series</h1>
 <canvas id="timeSeries" width="400" height="200"></canvas>
@@ -36,7 +77,13 @@
       const receivedData = JSON.parse(message.body);
       const currentHour = receivedData.dataTime;
       const hourlyData = receivedData.data;
+      const allPreviousData = receivedData.allPreviousData;
+
+
       allHourlyData[currentHour] = hourlyData;
+
+      Object.assign(allHourlyData, allPreviousData);
+
       updateTimeSeries(allHourlyData)
     });
 
@@ -47,10 +94,11 @@
   function updateRealtimeKeywords(keywords) {
     let keywordList = document.getElementById("keywordList");
     keywordList.innerHTML = "";
-    keywords.forEach(function(keyword) {
-      let listItem = document.createElement("li");
-      listItem.textContent = keyword.keyword;
-      keywordList.appendChild(listItem);
+    keywords.forEach(function(keyword , index) {
+      let keywordItem = document.createElement("div");
+      keywordItem.className = "keyword-item";
+      keywordItem.textContent = `${index + 1}. ${keyword.keyword}`;
+      keywordList.appendChild(keywordItem);
     });
   }
 
@@ -62,12 +110,12 @@
 
   function updateTimeSeries(allData) {
     console.log(allData);
-
-
-
     const dataTimes = Object.keys(allData).sort();
     console.log(dataTimes);
+
     let firstDataSet = allData[dataTimes[0]] || {};
+
+
     const keywords = Object.keys(firstDataSet);
 
     const datasets = keywords.map(keyword => {
@@ -83,14 +131,11 @@
       chart.destroy();  // 이전 차트를 제거
     }
 
-    const formattedLabels = dataTimes.map(hour => `${hour}:00`);
-
-
 
     chart = new Chart(document.getElementById('timeSeries').getContext('2d'), {
       type: 'line',
       data: {
-        labels: formattedLabels,
+        labels: dataTimes.map(time => `${time}:00`),
         datasets: datasets
       },
       options: {
