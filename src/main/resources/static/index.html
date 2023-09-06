@@ -75,16 +75,29 @@
 
     stompClient.subscribe('/topic/hourly_data', function (message) {
       const receivedData = JSON.parse(message.body);
+
       const currentHour = receivedData.dataTime;
       const hourlyData = receivedData.data;
       const allPreviousData = receivedData.allPreviousData;
 
+      if (receivedData.reset) {
+        allHourlyData = {};
+        if (chart) {
+          chart.destory();
+        }
+        return;
+      }
 
       allHourlyData[currentHour] = hourlyData;
 
+      console.log(hourlyData);
+
       Object.assign(allHourlyData, allPreviousData);
 
+      console.log(allHourlyData);
+
       updateTimeSeries(allHourlyData)
+
     });
 
     // stompClient.send("/app/request_keywords", {}, {});
@@ -106,17 +119,21 @@
   console.log("end")
 
 
-
-
   function updateTimeSeries(allData) {
     console.log(allData);
     const dataTimes = Object.keys(allData).sort();
     console.log(dataTimes);
 
-    let firstDataSet = allData[dataTimes[0]] || {};
+    const allKeywords = new Set();
 
+    for (const hour in allData) {
+      for (const keyword in allData[hour]) {
+        allKeywords.add(keyword);
+      }
+    }
 
-    const keywords = Object.keys(firstDataSet);
+    const keywords = Array.from(allKeywords);
+
 
     const datasets = keywords.map(keyword => {
       return {
@@ -126,6 +143,9 @@
         borderColor: '#' + Math.floor(Math.random()*16777215).toString(16),
       };
     });
+
+    console.log(datasets);
+
 
     if (chart) {
       chart.destroy();  // 이전 차트를 제거

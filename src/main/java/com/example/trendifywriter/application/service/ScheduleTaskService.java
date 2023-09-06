@@ -7,12 +7,28 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+
+// 흐름정리
+
+// 10분주기 스케줄러 , 10분마다 키워드를 모아서 레디스 hourly:키에 결과를 누적시킨다 by updateTenMinutes()
+
+// 1시간주기 스케줄러 , 1시간이 돨때 레디스에 누적시킨값을 꺼내서 프론트 차트용으로 쓰일 시간별 탑키워드 10개를계산한후 반환, 그리고 해당 hourly: 레디스키는삭제하고 새로만들어진값을 daily:키에저장  by updateHourly
+
+// 자정이 넘어가기전에 , 그날 모든 redis 에 저장된 시간별 키워드 daily 값을 모두 꺼내서 일별 탑키워드 10개를구해서  해당 값을 rdb에 저장후 redis daily값 삭제 . 일별데이터 조회가능 .updateDaily
+
+//
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,14 +47,27 @@ public class ScheduleTaskService {
         Map<String, Integer> latestKeywords = frequencyTrendAnalyzer.analyze();
         eventPublisher.publishEvent(new KeywordsEvent(latestKeywords)); // 실시간(10분간격) 키워드 웹소켓 업데이트.
 
-        // 시간별 키워드 저장 로직
-        // 10분별 데이터도 시각화가 필요할지 ????
         String currentHour = getCurrentHour();
-        redisTemplate.opsForHash().putAll("hourly:" + currentHour, latestKeywords);
+
+        HashOperations<String, String, Integer> hashOperations = redisTemplate.opsForHash();
+
+        for (Entry<String, Integer> entry : latestKeywords.entrySet()) {
+            String key = entry.getKey();
+            Integer newFrequency = entry.getValue();
+
+            Integer existingFrequency = hashOperations.get("hourly:" +currentHour, key);
+
+            if (existingFrequency != null) {
+                newFrequency += existingFrequency;
+            }
+
+            hashOperations.put("hourly:" +currentHour, key, newFrequency);
+        }
+
+//        redisTemplate.opsForHash().putAll("hourly:" + currentHour, latestKeywords);
     }
 
 
-    //"hourly:" + currentHour 부분에서 , 예를들어 13시부터 ~14시까지 10분씩 데이터를 넣고 , hourly:13
     // 시간 바뀌기 1초전에 getCurrentHour 을 해야 이전 HH 인 hourly:13 을불러서 넣을수 있다.  0분에 실행하면 안될듯.
     // calculateTopKeywords 메서드 구현필요 -> 탑 10 키워드 정렬 추출.
     // 시간별 데이터 시각화 어떤식으로 프론트에 구현할지 ? , redis말고 rdb는 필요없을지 ?
@@ -46,20 +75,31 @@ public class ScheduleTaskService {
     @Scheduled(fixedRate = 65000)
     public void updateHourly() {
 
+
+
+
         String currentHour = getCurrentHour();
 
-        System.out.println("currentHour = " + currentHour);
+//        String backupKey = "hourly_backup:" + currentHour;
+
+
         Map<Object, Object> hourlyData = redisTemplate.opsForHash().entries("hourly:" + currentHour);
 
-        redisTemplate.delete("hourly:" + currentHour);
+//        redisTemplate.opsForHash().putAll(backupKey, hourlyData);
+
+        System.out.println("hourlyData = " + hourlyData);
+
 
         Map<String, Integer> hourlyTopKeywords = calculateTopKeywords(hourlyData);
+
+        System.out.println("hourlyTopKeywords = " + hourlyTopKeywords);
 
         Map<String, Map<String, Integer>> allPreviousData = new HashMap<>();
 
         for (int i = 0; i < Integer.parseInt(currentHour); i++) {
             String hour = String.format("%02d", i);
             Map<Object, Object> entries = redisTemplate.opsForHash().entries("daily:" + hour);
+            System.out.println("entries = " + entries);
             allPreviousData.put(hour, calculateTopKeywords(entries));
         }
 
@@ -71,16 +111,14 @@ public class ScheduleTaskService {
 
         simpMessagingTemplate.convertAndSend("/topic/hourly_data", payload);
 
+        redisTemplate.delete("hourly:" + currentHour);
+
         redisTemplate.opsForHash().putAll("daily:"+ currentHour, hourlyTopKeywords);
     }
 
 
-
-    // 이것도 1초전에 데이터 집계해야할듯
-    //  모든 daily 값 가져와서 , calculateTopKeywords 로 추출 .
-    // 일별 데이터와 시간별데이터는 , rdb에 저장후 , 데이터시각화에 보여줘야할듯 ? ,
-    // 10분데이터는 실시간 키워드 보여줄때만 같이 보여주고  ,rdb에 저장은 안하고 시간별데이터 집게할떄 redis에서 삭제 , 즉 1시간동안 10분데이터를 6번 히스토리 까지만 보여주고 , 삭제 !
-//    @Scheduled(cron = "0 0 0 * * *")  // 매일 자정에 실행
+    //자정에 레디스 시간별 값 꺼내서 , 일별키워드 산출후 rdb 에 저장 .
+    @Scheduled(cron = "0 0 0 * * *")
     public void updateDaily() {
 
         Map<Object, Object> daily = redisTemplate.opsForHash().entries("daily");
@@ -89,12 +127,18 @@ public class ScheduleTaskService {
 
         stringIntegerMap.entrySet().stream().forEachOrdered(
                 entry -> {
-                    DailyKeyword dailyKeyword = DailyKeyword.create(entry.getKey(),
-                            entry.getValue());
+                    DailyKeyword dailyKeyword = DailyKeyword.create(entry.getKey(), entry.getValue());
                     service.save(dailyKeyword);
                 }
         );
+
         redisTemplate.delete("daily");
+
+        // 자정에 , 시간별 차트 초기화 .
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("reset", true);
+        simpMessagingTemplate.convertAndSend("/topic/hourly_data", payload);
+
     }
 
 
@@ -110,44 +154,20 @@ public class ScheduleTaskService {
 
     private Map<String, Integer> calculateTopKeywords(Map<Object, Object>  data) {
 
-        Map<String, Integer> stringIntegerMap = new HashMap<>();
-
-        for (Map.Entry<Object, Object> entry : data.entrySet()) {
-            stringIntegerMap.put((String) entry.getKey(), (Integer) entry.getValue());
-        }
-
-        LinkedHashMap<String, Integer> topKeywords = new LinkedHashMap<>();
-
-
-        stringIntegerMap.entrySet().stream()
+        return data.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> (String) entry.getKey(),
+                        entry -> (Integer) entry.getValue()))
+                .entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
                 .limit(10)
-                .forEachOrdered(entry -> topKeywords.put(entry.getKey(), entry.getValue()));
-
-        return topKeywords;
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new));
 
     }
 }
 
 
-//
-//
-//        redisTemplate.opsForHash().putAll("daily:00", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//
-//                redisTemplate.opsForHash().putAll("daily:01", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:02", Map.of("교사", 40, "화장실", 14, "글로벌", 5, "홍범도", 22, "후쿠시마", 5));
-//                redisTemplate.opsForHash().putAll("daily:03", Map.of("교사", 20, "철거", 5, "글로벌", 13, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:04", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:05", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:06", Map.of("교사", 20, "유튜버", 25, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:07", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:08", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "목욕탕", 30, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:09", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:10", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:11", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:12", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:13", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:14", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:15", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:16", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
-//                redisTemplate.opsForHash().putAll("daily:17", Map.of("교사", 20, "화장실", 10, "글로벌", 5, "홍범도", 35, "후쿠시마", 35));
