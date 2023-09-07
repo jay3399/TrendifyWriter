@@ -1,4 +1,4 @@
-package com.example.trendifywriter.application.web;
+package com.example.trendifywriter.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -2,6 +2,7 @@ package com.example.trendifywriter.domain.dailykeyword.service;
 
 import com.example.trendifywriter.domain.dailykeyword.model.DailyKeyword;
 import com.example.trendifywriter.domain.dailykeyword.repository.DailyKeywordRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ public class DailyKeywordService {
         dailyKeywordRepository.save(dailyKeyword);
 
     }
+
 
 
 }

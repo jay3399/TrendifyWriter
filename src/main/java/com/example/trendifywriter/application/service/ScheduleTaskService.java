@@ -1,16 +1,20 @@
 package com.example.trendifywriter.application.service;
 
+import com.example.trendifywriter.application.dto.RealtimeKeywordDto;
 import com.example.trendifywriter.domain.dailykeyword.model.DailyKeyword;
 import com.example.trendifywriter.domain.dailykeyword.service.DailyKeywordService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -26,45 +30,56 @@ import org.springframework.stereotype.Service;
 
 // 자정이 넘어가기전에 , 그날 모든 redis 에 저장된 시간별 키워드 daily 값을 모두 꺼내서 일별 탑키워드 10개를구해서  해당 값을 rdb에 저장후 redis daily값 삭제 . 일별데이터 조회가능 .updateDaily
 
-//
-
-
 
 @Service
 @RequiredArgsConstructor
 public class ScheduleTaskService {
 
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final FrequencyTrendAnalyzer frequencyTrendAnalyzer;
-    private final ApplicationEventPublisher eventPublisher;
+    private final TrendAnalysisService trendAnalysisService;
     private final RedisTemplate redisTemplate;
     private final DailyKeywordService service;
 
+    private List<RealtimeKeywordDto> cache = new ArrayList<>();
+
+    private String currentHour;
+
+
     // 이벤트 - 발행 구독 모델사용  컨트롤러 / 서비스 분리
 
-    @Scheduled(fixedRate = 30000)  // 5분마다 실행
+    @Scheduled(fixedRate = 100000000)  // 10분마다 실행 ,
     public void updateTenMinutes() {
-        Map<String, Integer> latestKeywords = frequencyTrendAnalyzer.analyze();
-        eventPublisher.publishEvent(new KeywordsEvent(latestKeywords)); // 실시간(10분간격) 키워드 웹소켓 업데이트.
 
-        String currentHour = getCurrentHour();
+        if (currentHour == null) {
+            currentHour = getCurrentHour();
+        }
+
+        cache.clear();
+
+        Map<String, Integer> latestKeywords = trendAnalysisService.analyze();
+
+        List<RealtimeKeywordDto> realtimeKeywordDTO = getRealtimeKeywordDTO(latestKeywords);
+
+        simpMessagingTemplate.convertAndSend("/topic/realtime_keywords", realtimeKeywordDTO);
+
+        cache = realtimeKeywordDTO;
+
+        String redisKey = "hourly:" + currentHour;
 
         HashOperations<String, String, Integer> hashOperations = redisTemplate.opsForHash();
 
+
+        Map<String, Integer> existingValues = hashOperations.entries(redisKey);
+
         for (Entry<String, Integer> entry : latestKeywords.entrySet()) {
             String key = entry.getKey();
-            Integer newFrequency = entry.getValue();
-
-            Integer existingFrequency = hashOperations.get("hourly:" +currentHour, key);
-
-            if (existingFrequency != null) {
-                newFrequency += existingFrequency;
-            }
-
-            hashOperations.put("hourly:" +currentHour, key, newFrequency);
+            Integer value = entry.getValue();
+            existingValues.merge(key, value, Integer::sum);
         }
 
-//        redisTemplate.opsForHash().putAll("hourly:" + currentHour, latestKeywords);
+
+        hashOperations.putAll(redisKey, existingValues);
+
     }
 
 
@@ -72,10 +87,8 @@ public class ScheduleTaskService {
     // calculateTopKeywords 메서드 구현필요 -> 탑 10 키워드 정렬 추출.
     // 시간별 데이터 시각화 어떤식으로 프론트에 구현할지 ? , redis말고 rdb는 필요없을지 ?
 //    @Scheduled(cron = "0 0 * * * *")  // 매시간 0분에 실행
-    @Scheduled(fixedRate = 65000)
+    @Scheduled(fixedRate = 60000)
     public void updateHourly() {
-
-
 
 
         String currentHour = getCurrentHour();
@@ -99,7 +112,6 @@ public class ScheduleTaskService {
         for (int i = 0; i < Integer.parseInt(currentHour); i++) {
             String hour = String.format("%02d", i);
             Map<Object, Object> entries = redisTemplate.opsForHash().entries("daily:" + hour);
-            System.out.println("entries = " + entries);
             allPreviousData.put(hour, calculateTopKeywords(entries));
         }
 
@@ -141,10 +153,16 @@ public class ScheduleTaskService {
 
     }
 
+    @Scheduled(cron = "59 59 * * * *")
+    private void resetCurrentHour() {
+        currentHour = null;
+    }
 
-    private String getCurrentHour() {
+
+    public String getCurrentHour() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH"));
     }
+
 
     public String getCurrentDate() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -168,6 +186,24 @@ public class ScheduleTaskService {
                         LinkedHashMap::new));
 
     }
+
+
+    private static List<RealtimeKeywordDto> getRealtimeKeywordDTO(Map<String, Integer> keywords) {
+        List<RealtimeKeywordDto> collect = keywords.entrySet().stream()
+                .map(entry -> new RealtimeKeywordDto( entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparingInt(RealtimeKeywordDto::getFrequency).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
+        return collect;
+    }
+
+
+    public  List<RealtimeKeywordDto> getRealList(
+    ) {
+        return cache;
+    }
+
 }
+
 
 

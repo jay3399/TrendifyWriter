@@ -24,33 +24,5 @@ public class KeywordExtractor {
         return new ArrayList<>(collect);
 
     }
-
-//        List<String> extractedKeywords = new ArrayList<>();
-//
-//        for (String article : parsedArticles) {
-//            String[] words = article.split(" ");
-//            for (String word : words) {
-//                if (word.length() > 1 && !filterList.contains(word)) {
-//                    extractedKeywords.add(word);
-//                }
-//            }
-//        }
-//        return extractedKeywords;
-//    }
-
-
 }
 
-
-//    List<String> extractedKeywords = new ArrayList<>();
-//
-//        for (String article : parsedArticles) {
-//
-//
-//
-//                String[] words = article.split(" ");
-//                extractedKeywords.addAll(Arrays.asList(words));
-//
-//                }
-//
-//                return extractedKeywords;

@@ -38,32 +38,5 @@ public class NewsParser {
                 .collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
 
         return new ArrayList<>(collect);
-
-//        List<String> parsedArticles = new ArrayList<>();
-//
-//        for (SyndEntry article : rawArticles) {
-//
-//            String content = article.getTitle() + article.getDescription();
-//
-//            CharSequence normalize = OpenKoreanTextProcessorJava.normalize(content);
-//
-//            Seq<KoreanToken> tokenize = OpenKoreanTextProcessorJava.tokenize(normalize);
-//
-//            List<KoreanPhrase> koreanPhrases = OpenKoreanTextProcessorJava.extractPhrases(tokenize,
-//                    true, true);
-//
-//            List<String> filteredPhrases = koreanPhrases.stream()
-//                    .map(KoreanPhrase::text)
-//                    .filter(text -> !text.matches(".*\\d+.*"))  // 숫자 포함 단어 제외
-//                    .filter(text -> !text.matches(".*[a-zA-Z]+.*"))  // 영어 포함 단어 제외
-//                    .filter(text -> !text.matches("\\d+일"))  // 숫자 + '일' 단어 제외
-//                    .filter(text -> !text.matches(".+(구|시|마을|군)$"))
-//                    .collect(Collectors.toList());
-//
-//            parsedArticles.addAll(filteredPhrases);
-//
-//        }
-//        return parsedArticles;
     }
-
 }
