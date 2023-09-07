@@ -169,6 +169,12 @@
     });
   }
 
+  window.addEventListener('load', function() {
+    fetch('/realtime_keywords')
+    .then(response => response.json())
+    .then(data => updateRealtimeKeywords(data))
+    .catch(error => console.error('error', error));
+  });
 
 
 </script>

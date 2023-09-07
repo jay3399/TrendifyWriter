@@ -3,6 +3,7 @@ package com.example.trendifywriter.application.service;
 import com.example.trendifywriter.application.dto.RealtimeKeywordDto;
 import com.example.trendifywriter.domain.dailykeyword.model.DailyKeyword;
 import com.example.trendifywriter.domain.dailykeyword.service.DailyKeywordService;
+import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -40,10 +41,14 @@ public class ScheduleTaskService {
     private final RedisTemplate redisTemplate;
     private final DailyKeywordService service;
 
-    private List<RealtimeKeywordDto> cache = new ArrayList<>();
+    private List<RealtimeKeywordDto> lastFetchedData = new ArrayList<>();
 
     private String currentHour;
 
+    @PostConstruct  // 서비스 시작 시 한 번 실행
+    public void init() {
+        updateTenMinutes();
+    }
 
     // 이벤트 - 발행 구독 모델사용  컨트롤러 / 서비스 분리
 
@@ -54,15 +59,15 @@ public class ScheduleTaskService {
             currentHour = getCurrentHour();
         }
 
-        cache.clear();
 
         Map<String, Integer> latestKeywords = trendAnalysisService.analyze();
 
         List<RealtimeKeywordDto> realtimeKeywordDTO = getRealtimeKeywordDTO(latestKeywords);
 
+        lastFetchedData = realtimeKeywordDTO;
+
         simpMessagingTemplate.convertAndSend("/topic/realtime_keywords", realtimeKeywordDTO);
 
-        cache = realtimeKeywordDTO;
 
         String redisKey = "hourly:" + currentHour;
 
@@ -200,7 +205,7 @@ public class ScheduleTaskService {
 
     public  List<RealtimeKeywordDto> getRealList(
     ) {
-        return cache;
+        return lastFetchedData;
     }
 
 }
