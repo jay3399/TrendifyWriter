@@ -53,7 +53,7 @@
 <ul id="keywordList" class="keyword-container"  ></ul>
 
 <h1>Hourly Top Keywords</h1>
-<canvas id="timeSeries" width="400" height="200"></canvas>
+<canvas id="timeSeries" width="300" height="200"></canvas>
 
 <script>
   console.log("start")
@@ -76,33 +76,31 @@
     stompClient.subscribe('/topic/hourly_data', function (message) {
       const receivedData = JSON.parse(message.body);
 
-      const currentHour = receivedData.dataTime;
-      const hourlyData = receivedData.data;
-      const allPreviousData = receivedData.allPreviousData;
-
-      if (receivedData.reset) {
-        allHourlyData = {};
-        if (chart) {
-          chart.destory();
-        }
-        return;
-      }
-
-      allHourlyData[currentHour] = hourlyData;
-
-      console.log(hourlyData);
-
-      Object.assign(allHourlyData, allPreviousData);
-
-      console.log(allHourlyData);
-
-      updateTimeSeries(allHourlyData)
+      handleReceivedData(receivedData);
 
     });
 
     // stompClient.send("/app/request_keywords", {}, {});
 
   });
+
+  function handleReceivedData(receivedData) {
+
+    allHourlyData = {};
+    if (chart) {
+      chart.destroy();
+    }
+
+    const currentHour = receivedData.dataTime;
+    const hourlyData = receivedData.data;
+    const allPreviousData = receivedData.allPreviousData;
+
+
+    allHourlyData[currentHour] = hourlyData;
+    Object.assign(allHourlyData, allPreviousData);
+    updateTimeSeries(allHourlyData);
+  }
+
 
   function updateRealtimeKeywords(keywords) {
     let keywordList = document.getElementById("keywordList");
@@ -172,7 +170,11 @@
   window.addEventListener('load', function() {
     fetch('/realtime_keywords')
     .then(response => response.json())
-    .then(data => updateRealtimeKeywords(data))
+    .then(data => {
+      updateRealtimeKeywords(data.realList);
+      console.log(data.refreshDTO);
+      handleReceivedData(data.refreshDTO);
+    })
     .catch(error => console.error('error', error));
   });
 

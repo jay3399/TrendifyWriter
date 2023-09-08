@@ -1,11 +1,14 @@
 package com.example.trendifywriter.application.web;
 
-import com.example.trendifywriter.application.dto.RealtimeKeywordDto;
-import com.example.trendifywriter.application.service.ScheduleTaskService;
+import com.example.trendifywriter.application.dto.HourlyRefreshDTO;
+import com.example.trendifywriter.application.dto.CurrentKeywordDTO;
+import com.example.trendifywriter.domain.currentkeyword.service.CurrentSchService;
+import com.example.trendifywriter.domain.dailykeyword.service.DailySchService;
+import com.example.trendifywriter.domain.hourlykeyword.service.HourlySchService;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.annotation.SubscribeMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,17 +17,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class WebSocketController {
 
-    private final ScheduleTaskService scheduleTaskService;
+    private final CurrentSchService currentSchService;
+
+    private final HourlySchService hourlySchService;
 
 
     @GetMapping("/realtime_keywords")
-    public List<RealtimeKeywordDto> realtimeKeywordDtoList() {
+    public Map<String , Object> realtimeKeywordDtoList() {
 
 
-        List<RealtimeKeywordDto> realList = scheduleTaskService.getRealList();
+//        List<CurrentKeywordDTO> realList = scheduleTaskService.getRealList();
 
+        List<CurrentKeywordDTO> realList = currentSchService.getRealList();
 
-        return realList;
+//        HourlyRefreshDTO refreshDTO = scheduleTaskService.getRefreshDTO();
+
+        HourlyRefreshDTO refreshDTO = hourlySchService.getRefreshDTO();
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("realList", realList);
+        response.put("refreshDTO", refreshDTO);
+
+        return response;
 
     }
 
